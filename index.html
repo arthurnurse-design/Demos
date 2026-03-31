@@ -154,7 +154,7 @@
       flex: 1;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-end;
       gap: 64px;
     }
     .nav-link {
@@ -361,6 +361,8 @@
       sectionLabel.textContent = data.label;
       menuList.innerHTML = '';
 
+      overlay.classList.remove('open');
+
       data.items.forEach((item, i) => {
         const li = document.createElement('li');
         li.style.transitionDelay = (i * 0.04) + 's';
@@ -376,7 +378,9 @@
       });
 
       menuScroll.scrollTop = 0;
-      overlay.classList.add('open');
+      requestAnimationFrame(() => {
+        overlay.classList.add('open');
+      });
     }
 
     function closeMenu() {
