@@ -110,8 +110,13 @@
       overflow: hidden;
     }
     #cursor.hover {
-      width: 56px;
-      height: 56px;
+      width: 130px;
+      height: 40px;
+      border-radius: 20px;
+    }
+    #cursor.hover-menu {
+      width: 140px;
+      height: 140px;
       border-radius: 50%;
     }
     #cursor-label {
@@ -124,7 +129,10 @@
       transform: scale(0.85);
       transition: opacity 0.18s ease 0.14s, transform 0.22s ease 0.12s;
       user-select: none;
-      display: none;
+    }
+    #cursor.hover #cursor-label {
+      opacity: 1;
+      transform: scale(1);
     }
 
     /* ── Navigation ────────────────────────────────────────── */
@@ -254,7 +262,7 @@
       display: inline-block;
       font-family: 'Chip Display', -apple-system, BlinkMacSystemFont, sans-serif;
       font-weight: 500;
-      font-size: clamp(32px, 5.5vw, 64px);
+      font-size: clamp(64px, 11vw, 128px);
       line-height: 1.05;
       color: #fff;
       padding: 2px 0;
@@ -614,13 +622,24 @@
       cursorEl.style.top  = e.clientY + 'px';
 
       const target = e.target;
-      const isOverInteractive = target.closest('.menu-item') || target.closest('.nav-link') || target.closest('#nav-logo') || target.closest('#nav-search');
+      const isOverMenuItem = target.closest('.menu-item');
+      const isOverNav = target.closest('.nav-link') || target.closest('#nav-logo') || target.closest('#nav-search');
 
-      if (isOverInteractive) {
+      if (isOverMenuItem) {
         cursorEl.classList.remove('hover');
+        cursorEl.classList.add('hover-menu');
         hoveredCard = null;
         return;
       }
+
+      if (isOverNav) {
+        cursorEl.classList.remove('hover');
+        cursorEl.classList.remove('hover-menu');
+        hoveredCard = null;
+        return;
+      }
+
+      cursorEl.classList.remove('hover-menu');
 
       mouse.set(
         (e.clientX / innerWidth - 0.5) * 2,
