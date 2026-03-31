@@ -183,11 +183,11 @@
       background: #000;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 0 60px;
+      padding: 0;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.4s ease;
+      overflow: hidden;
     }
     body.light #menu-overlay {
       background: #f0eeeb;
@@ -196,6 +196,15 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    #menu-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 90px 60px 80px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    #menu-scroll::-webkit-scrollbar { display: none; }
 
     #menu-section-label {
       font: 600 11px/1 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -241,8 +250,6 @@
     .menu-item:hover {
       transform: translateX(40px);
     }
-    .menu-item-indent-1 { padding-left: 40px; }
-    .menu-item-indent-2 { padding-left: 20px; }
   </style>
 </head>
 <body>
@@ -277,8 +284,10 @@
 
   <!-- Full-page menu overlay -->
   <div id="menu-overlay">
-    <div id="menu-section-label"></div>
-    <ul id="menu-items"></ul>
+    <div id="menu-scroll">
+      <div id="menu-section-label"></div>
+      <ul id="menu-items"></ul>
+    </div>
   </div>
 
   <canvas id="grain"></canvas>
@@ -306,6 +315,7 @@
     };
 
     const overlay = document.getElementById('menu-overlay');
+    const menuScroll = document.getElementById('menu-scroll');
     const sectionLabel = document.getElementById('menu-section-label');
     const menuList = document.getElementById('menu-items');
     let activeSection = null;
@@ -337,6 +347,7 @@
         el.classList.toggle('active', el.dataset.section === section);
       });
 
+      menuScroll.scrollTop = 0;
       overlay.classList.add('open');
     }
 
@@ -349,6 +360,31 @@
     document.querySelectorAll('.nav-link').forEach(btn => {
       btn.addEventListener('click', () => openMenu(btn.dataset.section));
     });
+
+    let menuMouseY = 0;
+    let autoScrollRAF = null;
+    const EDGE_ZONE = 120;
+    const MAX_SCROLL_SPEED = 12;
+
+    window.addEventListener('mousemove', e => { menuMouseY = e.clientY; });
+
+    function menuAutoScroll() {
+      autoScrollRAF = requestAnimationFrame(menuAutoScroll);
+      if (!overlay.classList.contains('open')) return;
+
+      const vh = window.innerHeight;
+      const topEdge = EDGE_ZONE;
+      const bottomEdge = vh - EDGE_ZONE;
+
+      if (menuMouseY < topEdge) {
+        const strength = 1 - (menuMouseY / topEdge);
+        menuScroll.scrollTop -= MAX_SCROLL_SPEED * strength;
+      } else if (menuMouseY > bottomEdge) {
+        const strength = (menuMouseY - bottomEdge) / EDGE_ZONE;
+        menuScroll.scrollTop += MAX_SCROLL_SPEED * strength;
+      }
+    }
+    menuAutoScroll();
   </script>
 
   <script type="importmap">
