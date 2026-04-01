@@ -45,16 +45,13 @@ This folder is a Git repo with `main` as the default branch.
    git fetch upstream
    ```
 
-## If `git` errors on `.git`
+## Git storage note
 
-Some tools block the `.git` pointer file. In **Terminal.app** (not inside a restricted sandbox), from this directory, either run `git` normally or use:
+If `git status` fails in an IDE but works in **Terminal.app**, permissions or a split layout (`gitdir:`) may be the cause. To use a normal `.git` folder only, run in Terminal from the parent of this project:
 
 ```bash
-export GIT_DIR="$(pwd)/.git"
-# if .git is a file pointing elsewhere, Git still resolves it when GIT_DIR is unset —
-# otherwise use the directory Git created, e.g. sibling `Demos.git`, with:
-export GIT_DIR=/path/to/Demos.git GIT_WORK_TREE=/path/to/Demos
-git status
+GIT_DATA="$HOME/Demos.git"
+test -d "$GIT_DATA" && mv "$GIT_DATA" Demos/.git-repo && rm -f Demos/.git && mv Demos/.git-repo Demos/.git
 ```
 
-After cloning or fixing permissions, a standard single `.git` directory should work everywhere.
+(Only if you still have a separate `$HOME/Demos.git` from an earlier setup; skip if `Demos/.git` is already a directory.)
