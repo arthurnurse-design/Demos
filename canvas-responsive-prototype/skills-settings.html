@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skills Settings</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --settings-sidebar: 240px;
+      --header-height: 48px;
+      --color-bg: #ffffff;
+      --color-border: #e8e5e5;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #6b6568;
+      --color-accent: #f5c518;
+      --color-nav-bg: #faf9f9;
+      --color-hover: rgba(0,0,0,0.04);
+      --color-active-bg: rgba(0,0,0,0.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      background: var(--color-bg);
+      min-height: 100vh;
+      color: var(--color-text);
+      overflow: hidden;
+    }
+
+    /* Info Panel */
+    .info-panel {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 26, 26, 0.92);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 1000;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+    }
+
+    .info-panel .width-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .info-panel .separator {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .info-panel .state-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-panel .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+
+    .info-panel .dot.off { background: #6b7280; }
+
+    .info-panel a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .info-panel a:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    /* App Layout */
+    .app-layout {
+      display: flex;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Main content area (replaces chat) */
+    .main-area {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+      position: relative;
+    }
+
+    /* Top bar with back/fwd and profile */
+    .top-bar {
+      height: var(--header-height);
+      min-height: var(--header-height);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .top-bar-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .top-bar-nav button {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      font-size: 16px;
+    }
+
+    .top-bar-nav button:hover {
+      background: var(--color-hover);
+    }
+
+    .top-bar-spacer { flex: 1; }
+
+    .top-bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-bar-actions button {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .top-bar-actions button:hover {
+      background: var(--color-hover);
+    }
+
+    .top-bar-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Content with settings sidebar */
+    .content-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Settings Sidebar */
+    .settings-sidebar {
+      width: var(--settings-sidebar);
+      min-width: var(--settings-sidebar);
+      background: var(--color-nav-bg);
+      border-right: 1px solid var(--color-border);
+      padding: 0;
+      overflow-y: auto;
+      transition: width 0.25s ease, min-width 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .settings-sidebar.hidden {
+      width: 0;
+      min-width: 0;
+      padding: 0;
+      border-right: none;
+      overflow: hidden;
+    }
+
+    .settings-sidebar-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: var(--header-height);
+      min-height: var(--header-height);
+    }
+
+    .nav-dots {
+      display: flex;
+      gap: 7px;
+      padding-left: 4px;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .nav-dot.red { background: #ff5f57; }
+    .nav-dot.yellow { background: #febc2e; }
+    .nav-dot.green { background: #28c840; }
+
+    .sidebar-toggle-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      margin-left: auto;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: var(--color-hover);
+    }
+
+    .settings-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 20px;
+      margin-bottom: 12px;
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--color-text);
+    }
+
+    .settings-back .arrow {
+      font-size: 16px;
+      color: var(--color-text-secondary);
+    }
+
+    .settings-section-title {
+      padding: 16px 20px 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+    }
+
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--color-text);
+      transition: background 0.12s;
+    }
+
+    .settings-nav-item:hover {
+      background: var(--color-hover);
+    }
+
+    .settings-nav-item.active {
+      background: var(--color-active-bg);
+      font-weight: 500;
+    }
+
+    .settings-nav-item .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .settings-nav-item.active .icon {
+      color: var(--color-text);
+    }
+
+    /* Main settings content */
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 40px;
+      min-width: 0;
+    }
+
+    .settings-content-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .settings-breadcrumb {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .settings-breadcrumb span {
+      color: var(--color-text-secondary);
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 16px;
+    }
+
+    .settings-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .settings-header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-nav-bg);
+    }
+
+    .btn-primary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: var(--color-text);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary:hover {
+      background: #333;
+    }
+
+    .settings-description {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Tab navigation */
+    .tab-nav {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .tab-item {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.12s;
+    }
+
+    .tab-item:hover {
+      color: var(--color-text);
+    }
+
+    .tab-item.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-text);
+    }
+
+    /* Skills card grid */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .skill-card {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skill-card:hover {
+      border-color: #ccc;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .skill-card-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .skill-card-icon svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .skill-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .skill-card-desc {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .skill-card-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      margin-top: auto;
+      padding-top: 4px;
+    }
+
+    .skill-card-footer .author-avatar {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 8px;
+      font-weight: 600;
+    }
+
+    .skill-card-footer .author-icon {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="appLayout">
+    <!-- Main Area -->
+    <div class="main-area">
+      <!-- Top bar -->
+      <div class="top-bar">
+        <div class="top-bar-nav">
+          <button>‹</button>
+          <button>›</button>
+        </div>
+        <div class="top-bar-spacer"></div>
+        <div class="top-bar-actions">
+          <button>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+          </button>
+          <button>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </button>
+          <div class="top-bar-avatar">A</div>
+        </div>
+      </div>
+
+      <!-- Content area with settings sidebar -->
+      <div class="content-area">
+        <!-- Settings sidebar -->
+        <div class="settings-sidebar" id="settingsSidebar">
+          <div class="settings-sidebar-header">
+            <div class="nav-dots">
+              <div class="nav-dot red"></div>
+              <div class="nav-dot yellow"></div>
+              <div class="nav-dot green"></div>
+            </div>
+            <button class="sidebar-toggle-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            </button>
+          </div>
+          <div class="settings-back">
+            <span class="arrow">‹</span> Settings
+          </div>
+
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            Profile
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68 1.65 1.65 0 0010 3.17V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+            Preferences
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
+            Notifications
+          </div>
+
+          <div class="settings-section-title">Customization</div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+            My Computer
+          </div>
+          <div class="settings-nav-item active">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+            Skills
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></span>
+            Workflows
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
+            Connectors
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+            Agent admin
+          </div>
+
+          <div class="settings-section-title">Account</div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68 1.65 1.65 0 0010 3.17V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+            General
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+            Users
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+            Plans & Billings
+          </div>
+          <div class="settings-nav-item">
+            <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            Sessions
+          </div>
+        </div>
+
+        <!-- Settings content -->
+        <div class="settings-content" id="settingsContent">
+          <div class="settings-content-inner">
+            <div class="settings-breadcrumb">Settings <span>›</span> Skills</div>
+
+            <div class="settings-header">
+              <h1>Skills</h1>
+              <div class="settings-header-actions">
+                <button class="btn-secondary">Skills admin</button>
+                <button class="btn-primary">+ Add skills</button>
+              </div>
+            </div>
+
+            <p class="settings-description">Skills are reusable, packaged instructions that tell a model how to behave for a specific task</p>
+
+            <div class="tab-nav">
+              <div class="tab-item active">Discover</div>
+              <div class="tab-item">My skills</div>
+              <div class="tab-item">Org skills</div>
+            </div>
+
+            <div class="skills-grid" id="skillsGrid">
+              <!-- Cards populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Panel -->
+  <div class="info-panel" id="infoPanel">
+    <span class="width-value" id="widthValue">1220px</span>
+    <div class="separator"></div>
+    <div class="state-item"><div class="dot" id="dotSettings"></div> <span id="stateSettings">Sidebar: 240px</span></div>
+    <div class="separator"></div>
+    <a href="index.html">← Canvas Prototype</a>
+  </div>
+
+  <script>
+    const settingsSidebar = document.getElementById('settingsSidebar');
+    const widthValue = document.getElementById('widthValue');
+    const stateSettings = document.getElementById('stateSettings');
+    const dotSettings = document.getElementById('dotSettings');
+
+    // Populate skill cards
+    const skills = [
+      { title: 'Brand principles', desc: 'Deep company analysis tailored for sales professionals preparin...', author: 'Athila', authorType: 'avatar' },
+      { title: 'Prospect Research', desc: 'Pulls a company brief before any outreach so you walk in knowi...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Cold Email Writer', desc: 'Turns a name and a URL into a sharp, personalised first messa...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Discovery Call Prep', desc: "Builds a question bank and talk track tailored to your prospect'...", author: 'DevRev', authorType: 'icon' },
+      { title: 'Objection Handler', desc: 'Surfaces the real concern behind "we\'re not ready" and h...', author: 'DevRev', authorType: 'icon' },
+      { title: 'CRM Updater', desc: 'Listens to your call notes and keeps Salesforce honest witho...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Competitive Positioning', desc: 'Shows you exactly where you win (and lose) against the nam...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Deal Reviewer', desc: 'Pressure-tests your pipeline and flags the deals that look better...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Proposal Builder', desc: 'Turns a messy brief into a clean, client-ready document faster t...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Meeting Summarizer', desc: 'Captures key decisions, action items and follow-ups from any...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Lead Scorer', desc: 'Ranks inbound leads by fit and intent signals so you focus on...', author: 'DevRev', authorType: 'icon' },
+      { title: 'Pitch Deck Writer', desc: 'Generates a compelling narrative structure for investor or client...', author: 'DevRev', authorType: 'icon' },
+    ];
+
+    const skillsGrid = document.getElementById('skillsGrid');
+    const boltSvg = `<svg viewBox="0 0 24 24" fill="#4285f4" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+
+    skills.forEach(skill => {
+      const card = document.createElement('div');
+      card.className = 'skill-card';
+      const footer = skill.authorType === 'avatar'
+        ? `<div class="skill-card-footer"><div class="author-avatar">A</div> ${skill.author}</div>`
+        : `<div class="skill-card-footer"><span class="author-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span> ${skill.author}</div>`;
+
+      card.innerHTML = `
+        <div class="skill-card-icon">${boltSvg}</div>
+        <div class="skill-card-title">${skill.title}</div>
+        <div class="skill-card-desc">${skill.desc}</div>
+        ${footer}
+      `;
+      skillsGrid.appendChild(card);
+    });
+
+    function updateLayout() {
+      const width = window.innerWidth;
+      widthValue.textContent = width + 'px';
+
+      const SETTINGS_WIDTH = 240;
+      const CONTENT_MIN = 480;
+
+      let settingsHidden = false;
+
+      // Hide settings sidebar when not enough room for content
+      if (width < SETTINGS_WIDTH + CONTENT_MIN) {
+        settingsHidden = true;
+      }
+
+      settingsSidebar.classList.toggle('hidden', settingsHidden);
+
+      stateSettings.textContent = settingsHidden ? 'Sidebar: Hidden' : `Sidebar: ${SETTINGS_WIDTH}px`;
+      dotSettings.className = 'dot' + (settingsHidden ? ' off' : '');
+    }
+
+    window.addEventListener('resize', updateLayout);
+    updateLayout();
+  </script>
+</body>
+</html>

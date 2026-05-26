@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Responsive States Prototype</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --nav-expanded: 240px;
+      --nav-collapsed: 60px;
+      --chat-min: 440px;
+      --canvas-sidebar: 240px;
+      --canvas-default: 520px;
+      --preview-full: 540px;
+      --header-height: 48px;
+      --color-bg: #ffffff;
+      --color-border: #e8e5e5;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #6b6568;
+      --color-accent: #f5c518;
+      --color-nav-bg: #faf9f9;
+      --color-canvas-bg: #f7f5f5;
+      --color-overlay-bg: rgba(0,0,0,0.3);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      background: var(--color-bg);
+      min-height: 100vh;
+      color: var(--color-text);
+      overflow: hidden;
+    }
+
+    /* Info Panel - floating overlay showing current state */
+    .info-panel {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 26, 26, 0.92);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 1000;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+    }
+
+    .info-panel .width-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .info-panel .separator {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .info-panel .state-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-panel .state-item .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+
+    .info-panel .state-item .dot.off {
+      background: #6b7280;
+    }
+
+    .info-panel .state-item .dot.overlay {
+      background: #f59e0b;
+    }
+
+    .info-panel .toggle-btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8);
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .info-panel .toggle-btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .info-panel .toggle-btn.active {
+      background: var(--color-accent);
+      color: #000;
+      border-color: var(--color-accent);
+    }
+
+    /* App Layout */
+    .app-layout {
+      display: flex;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Navigation Sidebar */
+    .nav-sidebar {
+      width: var(--nav-expanded);
+      min-width: var(--nav-expanded);
+      background: var(--color-nav-bg);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+
+    .nav-sidebar.collapsed {
+      width: var(--nav-collapsed);
+      min-width: var(--nav-collapsed);
+    }
+
+    .nav-header {
+      padding: 14px 16px 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: var(--header-height);
+      min-height: var(--header-height);
+    }
+
+    .nav-dots {
+      display: flex;
+      gap: 7px;
+      padding-left: 4px;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .nav-dot.red { background: #ff5f57; }
+    .nav-dot.yellow { background: #febc2e; }
+    .nav-dot.green { background: #28c840; }
+
+    .nav-toggle-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+      color: var(--color-text-secondary);
+    }
+
+    .nav-toggle-btn:hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .nav-back-fwd {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: auto;
+    }
+
+    .nav-sidebar.collapsed .nav-back-fwd {
+      display: none;
+    }
+
+    .nav-back-fwd button {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      font-size: 14px;
+    }
+
+    .nav-actions {
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-new-chat {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .nav-sidebar.collapsed .nav-new-chat span {
+      display: none;
+    }
+
+    .nav-sidebar.collapsed .nav-new-chat {
+      padding: 7px;
+      justify-content: center;
+    }
+
+    .nav-history-btn {
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .nav-sidebar.collapsed .nav-history-btn {
+      display: none;
+    }
+
+    .nav-section {
+      padding: 12px 12px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .nav-section-btn {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .nav-sidebar.collapsed .nav-section {
+      display: none;
+    }
+
+    .nav-history {
+      padding: 4px 8px;
+    }
+
+    .nav-sidebar.collapsed .nav-history {
+      display: none;
+    }
+
+    .nav-history-item {
+      padding: 7px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--color-text);
+    }
+
+    .nav-history-item:hover {
+      background: rgba(0,0,0,0.04);
+    }
+
+    .nav-history-item.active {
+      background: rgba(0,0,0,0.05);
+      font-weight: 500;
+    }
+
+    .nav-history-item .unread {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-accent);
+    }
+
+    .nav-list-section {
+      padding: 4px 12px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-sidebar.collapsed .nav-list-section {
+      display: none;
+    }
+
+    .nav-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .nav-item:hover {
+      background: rgba(0,0,0,0.04);
+    }
+
+    .nav-avatar {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 600;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .nav-avatar.u { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+    .nav-avatar.s1 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .nav-avatar.s2 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .nav-avatar.t { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .nav-avatar.a { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .nav-avatar.b { background: linear-gradient(135deg, #fa709a, #fee140); }
+    .nav-avatar.c { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+    .nav-avatar.d { background: linear-gradient(135deg, #f5576c, #ff6a88); }
+
+    .nav-item-name {
+      font-size: 13px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-sidebar.collapsed .nav-item-name {
+      display: none;
+    }
+
+    .nav-footer {
+      padding: 8px 12px 12px;
+      border-top: 1px solid var(--color-border);
+      margin-top: auto;
+    }
+
+    .nav-footer-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 4px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .nav-footer-item:hover {
+      color: var(--color-text);
+    }
+
+    .nav-sidebar.collapsed .nav-footer-item span {
+      display: none;
+    }
+
+    .nav-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 4px 4px;
+    }
+
+    .nav-profile-avatar {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .nav-profile-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .nav-profile-avatar .status-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      border: 2px solid var(--color-nav-bg);
+    }
+
+    .nav-profile-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .nav-profile-info .name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .nav-profile-info .plan {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+    }
+
+    .nav-sidebar.collapsed .nav-profile-info {
+      display: none;
+    }
+
+    .nav-sidebar.collapsed .nav-profile-actions {
+      display: none;
+    }
+
+    .nav-profile-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav-profile-actions button {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    /* Chat Area */
+    .chat-area {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+      position: relative;
+    }
+
+    .chat-header {
+      height: var(--header-height);
+      min-height: var(--header-height);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .chat-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-title .chevron {
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      margin-left: 4px;
+    }
+
+    .chat-header-actions {
+      display: flex;
+      gap: 2px;
+    }
+
+    .chat-header-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .chat-header-btn:hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px;
+      max-width: 768px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .message-user {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .message-bubble {
+      background: var(--color-text);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      max-width: 80%;
+      line-height: 1.4;
+    }
+
+    .message-ai {
+      margin-bottom: 20px;
+    }
+
+    .message-thinking {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    .thinking-bars {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .thinking-bars span {
+      width: 3px;
+      height: 14px;
+      background: var(--color-accent);
+      border-radius: 1.5px;
+    }
+
+    .message-ai-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--color-text);
+    }
+
+    .chat-input-area {
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 768px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .chat-input-thinking {
+      display: flex;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 22px;
+      border: 1px solid var(--color-border);
+      font-size: 14px;
+      outline: none;
+      background: var(--color-nav-bg);
+      color: var(--color-text-secondary);
+    }
+
+    .chat-action-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .chat-plus-btn {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .chat-send-btn {
+      background: var(--color-accent);
+      color: #000;
+    }
+
+    /* Canvas/Preview Panel (inline) */
+    .canvas-panel {
+      width: 0;
+      min-width: 0;
+      background: var(--color-canvas-bg);
+      border-left: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .canvas-panel.open {
+      min-width: 300px;
+    }
+
+    .canvas-tabs {
+      display: flex;
+      align-items: center;
+      height: var(--header-height);
+      min-height: var(--header-height);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0 8px;
+      background: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .canvas-tab {
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+
+    .canvas-tab.active {
+      color: var(--color-text);
+    }
+
+    .canvas-tab:hover {
+      background: rgba(0,0,0,0.04);
+    }
+
+    .canvas-tab-icon {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      gap: 12px;
+      border-bottom: 1px solid var(--color-border);
+      background: #fff;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      min-height: 36px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .canvas-toolbar .spacer {
+      flex: 1;
+    }
+
+    .canvas-toolbar .open-with {
+      padding: 4px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .canvas-toolbar .tool-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      border-radius: 4px;
+    }
+
+    .canvas-content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .canvas-card {
+      background: #fff;
+      border-radius: 10px;
+      min-height: 200px;
+      border: 1px solid var(--color-border);
+      flex: 1;
+    }
+
+    /* Overlay mode */
+    .canvas-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: var(--canvas-default);
+      max-width: calc(100% - 40px);
+      background: #fff;
+      z-index: 25;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+      flex-direction: column;
+    }
+
+    .canvas-overlay.visible {
+      display: flex;
+    }
+
+    .overlay-backdrop {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--color-overlay-bg);
+      z-index: 20;
+    }
+
+    .overlay-backdrop.visible {
+      display: block;
+    }
+
+    /* Canvas sidebar content (sources view) */
+    .overlay-progress {
+      padding: 14px 16px 8px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .overlay-progress .progress-icon {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-text-secondary);
+      border-radius: 50%;
+    }
+
+    .overlay-description {
+      padding: 4px 16px 16px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+
+    .overlay-section-title {
+      padding: 4px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .overlay-list {
+      padding: 4px 12px;
+    }
+
+    .overlay-list-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .overlay-list-item:hover {
+      background: var(--color-nav-bg);
+    }
+
+    .overlay-list-item .item-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .overlay-list-item .item-icon.red { background: #ef4444; }
+    .overlay-list-item .item-icon.teal { background: #14b8a6; }
+    .overlay-list-item .item-icon.blue { background: #3b82f6; }
+    .overlay-list-item .item-icon.green { background: #22c55e; }
+
+    .overlay-list-item .item-badge {
+      margin-left: auto;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--color-text);
+      opacity: 0.3;
+    }
+
+    .overlay-list-item .item-count {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+
+    .overlay-list-item.indented {
+      padding-left: 40px;
+    }
+
+    .overlay-list-item .source-icon {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Resize handles */
+    .resize-handle {
+      width: 5px;
+      cursor: col-resize;
+      background: transparent;
+      position: relative;
+      z-index: 15;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.dragging {
+      background: var(--color-accent);
+    }
+
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: -3px;
+      right: -3px;
+    }
+
+    body.resizing {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.resizing * {
+      pointer-events: none;
+    }
+
+    body.resizing .resize-handle {
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="appLayout">
+    <!-- Navigation Sidebar -->
+    <div class="nav-sidebar" id="navSidebar">
+      <div class="nav-header">
+        <div class="nav-dots">
+          <div class="nav-dot red"></div>
+          <div class="nav-dot yellow"></div>
+          <div class="nav-dot green"></div>
+        </div>
+        <button class="nav-toggle-btn" id="navToggleBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <div class="nav-back-fwd">
+          <button>‹</button>
+          <button>›</button>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button class="nav-new-chat">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+          <span>New Chat</span>
+        </button>
+        <button class="nav-history-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </button>
+      </div>
+
+      <div class="nav-history">
+        <div class="nav-history-item active">Prepare marketting prese...</div>
+        <div class="nav-history-item">Creative Framework Revi...<div class="unread"></div></div>
+        <div class="nav-history-item">Design Collaboration Wor...<div class="unread"></div></div>
+        <div class="nav-history-item">Strategic Planning Session</div>
+        <div class="nav-history-item">Creative Framework Revi...<div class="unread"></div></div>
+      </div>
+
+      <div class="nav-section">
+        <span class="nav-section-title">Chats</span>
+        <button class="nav-section-btn">+</button>
+      </div>
+
+      <div class="nav-list">
+        <div class="nav-item"><div class="nav-avatar u">U</div><span class="nav-item-name">User</span></div>
+        <div class="nav-item"><div class="nav-avatar s1">S</div><span class="nav-item-name">Shravan</span></div>
+        <div class="nav-item"><div class="nav-avatar s2">S</div><span class="nav-item-name">Samantha</span></div>
+        <div class="nav-item"><div class="nav-avatar t">T</div><span class="nav-item-name">Thomas</span></div>
+        <div class="nav-item"><div class="nav-avatar a">A</div><span class="nav-item-name">Alice</span></div>
+        <div class="nav-item"><div class="nav-avatar b">B</div><span class="nav-item-name">Brian</span></div>
+        <div class="nav-item"><div class="nav-avatar c">C</div><span class="nav-item-name">Catherine</span></div>
+        <div class="nav-item"><div class="nav-avatar d">D</div><span class="nav-item-name">David</span></div>
+      </div>
+
+      <div class="nav-footer">
+        <div class="nav-footer-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Agent Studio</span>
+        </div>
+        <div class="nav-profile">
+          <div class="nav-profile-avatar">
+            <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;">A</div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="nav-profile-info">
+            <span class="name">Ava wright</span>
+            <span class="plan">Maple</span>
+          </div>
+          <div class="nav-profile-actions">
+            <button>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resize handle: nav | chat -->
+    <div class="resize-handle" id="resizeNav"></div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chatArea">
+      <div class="chat-header">
+        <button class="chat-header-btn" id="sidebarOpenBtn" style="display:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <span class="chat-title">Prepare marketting presentations <span class="chevron">▾</span></span>
+        <div class="chat-header-actions">
+          <button class="chat-header-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+          <button class="chat-header-btn" id="canvasToggleInHeader">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-messages">
+        <div class="message-user">
+          <div class="message-bubble">Help me create a presentation...</div>
+        </div>
+        <div class="message-ai">
+          <div class="message-thinking">
+            <div class="thinking-bars"><span></span><span></span></div>
+            Thought for 2s ›
+          </div>
+          <div class="message-ai-text">
+            I've created a presentation based on our conversation about navigation icon affordances! The deck includes:
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-thinking">
+          <div class="thinking-bars"><span></span><span></span></div>
+        </div>
+        <input type="text" class="chat-input" placeholder="Ask anything" readonly>
+        <button class="chat-action-btn chat-plus-btn">+</button>
+        <button class="chat-action-btn chat-send-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Overlay backdrop -->
+      <div class="overlay-backdrop" id="overlayBackdrop"></div>
+
+      <!-- Overlay canvas panel -->
+      <div class="canvas-overlay" id="canvasOverlay">
+        <div class="canvas-tabs">
+          <div class="canvas-tab active"><span class="canvas-tab-icon">📄</span> Canvas</div>
+          <div class="canvas-tab"><span class="canvas-tab-icon">🖼</span> Avatars</div>
+          <div class="canvas-tab"><span class="canvas-tab-icon">🖼</span> Avatars</div>
+          <div class="canvas-tab" style="margin-left:auto;font-size:18px;color:var(--color-text-secondary);">+</div>
+        </div>
+        <div class="overlay-progress">
+          <div class="progress-icon"></div>
+          2 of 4 steps
+        </div>
+        <div class="overlay-description">Gather recents projects and forming an agenda</div>
+        <div class="overlay-section-title">Canvas</div>
+        <div class="overlay-list">
+          <div class="overlay-list-item"><div class="item-icon red">📊</div> All hands <div class="item-badge"></div></div>
+          <div class="overlay-list-item"><div class="item-icon teal">🖼</div> Image <div class="item-badge"></div></div>
+          <div class="overlay-list-item"><div class="item-icon blue">📄</div> Document</div>
+          <div class="overlay-list-item"><div class="item-icon green">📁</div> Uploaded by user</div>
+        </div>
+        <div class="overlay-section-title" style="margin-top:12px;">Sources</div>
+        <div class="overlay-list">
+          <div class="overlay-list-item"><span class="source-icon">💻</span> John's Macbook</div>
+          <div class="overlay-list-item indented"><span class="source-icon">📁</span> Folder 1</div>
+          <div class="overlay-list-item indented"><span class="source-icon">📁</span> Folder 2</div>
+          <div class="overlay-list-item"><span class="source-icon">📝</span> Notion <span class="item-count">12</span></div>
+          <div class="overlay-list-item"><span class="source-icon">📧</span> Gmail <span class="item-count">20</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resize handle: chat | canvas -->
+    <div class="resize-handle" id="resizeCanvas"></div>
+
+    <!-- Canvas Panel (inline split) -->
+    <div class="canvas-panel" id="canvasPanel">
+      <div class="canvas-tabs">
+        <div class="canvas-tab"><span class="canvas-tab-icon">📄</span> Canvas</div>
+        <div class="canvas-tab active"><span class="canvas-tab-icon">🎨</span> Design direction</div>
+        <div class="canvas-tab"><span class="canvas-tab-icon">🖼</span> Avatars</div>
+      </div>
+      <div class="canvas-toolbar">
+        <button class="tool-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <div class="spacer"></div>
+        <span>Last edited by 👤 3m ago</span>
+        <span class="open-with">Open with 🌄</span>
+        <button class="tool-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="tool-btn">⋯</button>
+      </div>
+      <div class="canvas-content">
+        <div class="canvas-card"></div>
+        <div class="canvas-card"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Panel -->
+  <div class="info-panel" id="infoPanel">
+    <span class="width-value" id="widthValue">1220px</span>
+    <div class="separator"></div>
+    <div class="state-item"><div class="dot" id="dotNav"></div> <span id="stateNav">Nav: 240px</span></div>
+    <div class="state-item"><div class="dot" id="dotCanvas"></div> <span id="stateCanvas">Canvas: Off</span></div>
+    <div class="separator"></div>
+    <button class="toggle-btn" id="btnCanvas">Open Canvas</button>
+    <button class="toggle-btn" id="btnPreview">Open Preview</button>
+    <button class="toggle-btn" id="btnSidebarOverride">Override Sidebar</button>
+    <div class="separator"></div>
+    <a href="skills-settings.html" style="color:rgba(255,255,255,0.7);text-decoration:none;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);font-size:11px;font-weight:500;">Skills Settings →</a>
+  </div>
+
+  <script>
+    const navSidebar = document.getElementById('navSidebar');
+    const chatArea = document.getElementById('chatArea');
+    const canvasPanel = document.getElementById('canvasPanel');
+    const canvasOverlay = document.getElementById('canvasOverlay');
+    const overlayBackdrop = document.getElementById('overlayBackdrop');
+    const widthValue = document.getElementById('widthValue');
+    const stateNav = document.getElementById('stateNav');
+    const stateCanvas = document.getElementById('stateCanvas');
+    const dotNav = document.getElementById('dotNav');
+    const dotCanvas = document.getElementById('dotCanvas');
+    const btnCanvas = document.getElementById('btnCanvas');
+    const btnPreview = document.getElementById('btnPreview');
+    const btnSidebarOverride = document.getElementById('btnSidebarOverride');
+    const resizeNav = document.getElementById('resizeNav');
+    const resizeCanvas = document.getElementById('resizeCanvas');
+    const sidebarOpenBtn = document.getElementById('sidebarOpenBtn');
+
+    let canvasOpen = false;
+    let previewOpen = false;
+    let sidebarUserOverride = null;
+
+    // User-dragged widths (null = use computed defaults)
+    let userNavWidth = null;
+    let userCanvasWidth = null;
+
+    const NAV_EXPANDED = 240;
+    const NAV_COLLAPSED = 60;
+    const NAV_MIN = 60;
+    const NAV_MAX = 400;
+    const CHAT_MIN = 560;
+    const CANVAS_DEFAULT = 520;
+    const CANVAS_MIN = 260;
+    const CANVAS_MAX = 800;
+    const PREVIEW_FULL = 540;
+
+    btnCanvas.addEventListener('click', () => {
+      canvasOpen = !canvasOpen;
+      if (canvasOpen) previewOpen = false;
+      btnCanvas.classList.toggle('active', canvasOpen);
+      btnPreview.classList.remove('active');
+      updateLayout();
+    });
+
+    btnPreview.addEventListener('click', () => {
+      previewOpen = !previewOpen;
+      if (previewOpen) canvasOpen = false;
+      btnPreview.classList.toggle('active', previewOpen);
+      btnCanvas.classList.remove('active');
+      updateLayout();
+    });
+
+    btnSidebarOverride.addEventListener('click', () => {
+      if (sidebarUserOverride === null) {
+        sidebarUserOverride = true;
+      } else if (sidebarUserOverride === true) {
+        sidebarUserOverride = false;
+      } else {
+        sidebarUserOverride = null;
+      }
+      btnSidebarOverride.classList.toggle('active', sidebarUserOverride !== null);
+      btnSidebarOverride.textContent = sidebarUserOverride === null ? 'Override Sidebar' :
+        sidebarUserOverride ? 'Sidebar: Forced Open' : 'Sidebar: Forced Closed';
+      updateLayout();
+    });
+
+    document.getElementById('canvasToggleInHeader').addEventListener('click', () => {
+      previewOpen = !previewOpen;
+      canvasOpen = false;
+      btnPreview.classList.toggle('active', previewOpen);
+      btnCanvas.classList.remove('active');
+      updateLayout();
+    });
+
+    document.getElementById('navToggleBtn').addEventListener('click', () => {
+      if (sidebarUserOverride === null) {
+        sidebarUserOverride = navSidebar.classList.contains('collapsed') ? true : false;
+      } else {
+        sidebarUserOverride = null;
+      }
+      btnSidebarOverride.classList.toggle('active', sidebarUserOverride !== null);
+      btnSidebarOverride.textContent = sidebarUserOverride === null ? 'Override Sidebar' :
+        sidebarUserOverride ? 'Sidebar: Forced Open' : 'Sidebar: Forced Closed';
+      updateLayout();
+    });
+
+    overlayBackdrop.addEventListener('click', () => {
+      canvasOpen = false;
+      previewOpen = false;
+      btnCanvas.classList.remove('active');
+      btnPreview.classList.remove('active');
+      updateLayout();
+    });
+
+    sidebarOpenBtn.addEventListener('click', () => {
+      sidebarUserOverride = true;
+      userNavWidth = null;
+      btnSidebarOverride.classList.add('active');
+      btnSidebarOverride.textContent = 'Sidebar: Forced Open';
+      updateLayout();
+    });
+
+    // --- Drag resize logic ---
+    function initDrag(handle, onDrag, onEnd) {
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        document.body.classList.add('resizing');
+        handle.classList.add('dragging');
+
+        const onMove = (e) => onDrag(e.clientX);
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          document.body.classList.remove('resizing');
+          handle.classList.remove('dragging');
+          if (onEnd) onEnd();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+
+    // Nav resize handle
+    initDrag(resizeNav, (x) => {
+      const newWidth = Math.max(NAV_MIN, Math.min(NAV_MAX, x));
+      userNavWidth = newWidth;
+      sidebarUserOverride = true;
+      btnSidebarOverride.classList.add('active');
+      btnSidebarOverride.textContent = 'Sidebar: Forced Open';
+      updateLayout();
+    });
+
+    // Canvas resize handle
+    initDrag(resizeCanvas, (x) => {
+      const newWidth = window.innerWidth - x;
+      const clamped = Math.max(CANVAS_MIN, Math.min(CANVAS_MAX, newWidth));
+      userCanvasWidth = clamped;
+      updateLayout();
+    });
+
+    function updateLayout() {
+      const width = window.innerWidth;
+      widthValue.textContent = width + 'px';
+
+      let navWidth = NAV_EXPANDED;
+      let navCollapsed = false;
+      let showInline = false;
+      let showOverlay = false;
+      let canvasWidth = 0;
+
+      const panelOpen = canvasOpen || previewOpen;
+      const desiredCanvasWidth = userCanvasWidth || (previewOpen ? PREVIEW_FULL : CANVAS_DEFAULT);
+
+      // Step 1: Determine nav state
+      if (sidebarUserOverride === true) {
+        navWidth = userNavWidth || NAV_EXPANDED;
+        navCollapsed = navWidth <= NAV_COLLAPSED;
+      } else if (sidebarUserOverride === false) {
+        navCollapsed = true;
+        navWidth = NAV_COLLAPSED;
+      } else {
+        if (width < 740) {
+          navCollapsed = true;
+          navWidth = NAV_COLLAPSED;
+        } else {
+          navCollapsed = false;
+          navWidth = NAV_EXPANDED;
+        }
+      }
+
+      // Step 2: Determine canvas/preview display mode
+      if (panelOpen) {
+        const availableWithCurrentNav = width - navWidth;
+
+        if (availableWithCurrentNav >= CHAT_MIN + CANVAS_MIN) {
+          showInline = true;
+          canvasWidth = Math.min(availableWithCurrentNav - CHAT_MIN, desiredCanvasWidth);
+        } else if (sidebarUserOverride !== true) {
+          const availableCollapsed = width - NAV_COLLAPSED;
+          if (availableCollapsed >= CHAT_MIN + CANVAS_MIN) {
+            navCollapsed = true;
+            navWidth = NAV_COLLAPSED;
+            showInline = true;
+            canvasWidth = Math.min(availableCollapsed - CHAT_MIN, desiredCanvasWidth);
+          } else {
+            // Auto-close canvas/preview on narrow widths to prioritise chat
+            canvasOpen = false;
+            previewOpen = false;
+            btnCanvas.classList.remove('active');
+            btnPreview.classList.remove('active');
+            navCollapsed = true;
+            navWidth = NAV_COLLAPSED;
+          }
+        } else {
+          // User forced sidebar open but not enough room
+          // Auto-close canvas to show chat
+          canvasOpen = false;
+          previewOpen = false;
+          btnCanvas.classList.remove('active');
+          btnPreview.classList.remove('active');
+        }
+      }
+
+      // Apply nav state
+      navSidebar.classList.toggle('collapsed', navCollapsed);
+      navSidebar.style.width = navWidth + 'px';
+      navSidebar.style.minWidth = navWidth + 'px';
+
+      // Show/hide nav resize handle and open button
+      resizeNav.style.display = navCollapsed ? 'none' : '';
+      sidebarOpenBtn.style.display = navCollapsed ? '' : 'none';
+
+      // Apply canvas/preview state
+      if (showInline) {
+        canvasPanel.classList.add('open');
+        canvasPanel.style.width = canvasWidth + 'px';
+        canvasPanel.style.minWidth = CANVAS_MIN + 'px';
+        canvasOverlay.classList.remove('visible');
+        overlayBackdrop.classList.remove('visible');
+        resizeCanvas.style.display = '';
+      } else if (showOverlay) {
+        canvasPanel.classList.remove('open');
+        canvasPanel.style.width = '0';
+        canvasPanel.style.minWidth = '0';
+        canvasOverlay.classList.add('visible');
+        overlayBackdrop.classList.add('visible');
+        resizeCanvas.style.display = 'none';
+      } else {
+        canvasPanel.classList.remove('open');
+        canvasPanel.style.width = '0';
+        canvasPanel.style.minWidth = '0';
+        canvasOverlay.classList.remove('visible');
+        overlayBackdrop.classList.remove('visible');
+        resizeCanvas.style.display = 'none';
+      }
+
+      // Update info panel
+      stateNav.textContent = `Nav: ${navWidth}px`;
+      dotNav.className = 'dot' + (navCollapsed ? ' off' : '');
+
+      if (showInline) {
+        stateCanvas.textContent = `Canvas: Inline (${canvasWidth}px)`;
+        dotCanvas.className = 'dot';
+      } else if (showOverlay) {
+        stateCanvas.textContent = 'Canvas: Overlay';
+        dotCanvas.className = 'dot overlay';
+      } else {
+        stateCanvas.textContent = 'Canvas: Off';
+        dotCanvas.className = 'dot off';
+      }
+    }
+
+    // Listen to actual browser resize
+    window.addEventListener('resize', updateLayout);
+    updateLayout();
+  </script>
+</body>
+</html>
