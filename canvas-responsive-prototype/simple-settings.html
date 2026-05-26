@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings Layout — Simplified</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --color-border: #e8e5e5;
+      --color-accent: #f5c518;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      background: #1a1a1a;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-label {
+      font-size: 72px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: rgba(0,0,0,0.12);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .panel-name {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(0,0,0,0.35);
+    }
+
+    /* Settings sidebar */
+    .sidebar {
+      background: #f5f3f3;
+      border-right: 1px solid var(--color-border);
+      width: 240px;
+      min-width: 240px;
+    }
+
+    .sidebar.hidden {
+      width: 0;
+      min-width: 0;
+      border-right: none;
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      min-width: 0;
+      background: #ffffff;
+      flex-direction: column;
+    }
+
+    .content-labels {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .content-inner-label {
+      font-size: 28px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: rgba(0,0,0,0.08);
+    }
+
+    .content-inner-hint {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Content container visualisation */
+    .content-container {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.02);
+      border-left: 1px dashed rgba(0,0,0,0.08);
+      border-right: 1px dashed rgba(0,0,0,0.08);
+      pointer-events: none;
+    }
+
+    /* Card grid visualisation */
+    .grid-vis {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .grid-col {
+      width: 40px;
+      height: 24px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.06);
+    }
+
+    .grid-col.hidden {
+      display: none;
+    }
+
+    .grid-hint {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Controls bar */
+    .controls {
+      background: #1a1a1a;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px 20px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .controls .total-width {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8);
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .controls .btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .controls .btn.active {
+      background: var(--color-accent);
+      color: #000;
+      border-color: var(--color-accent);
+    }
+
+    .controls .state {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .controls .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+
+    .controls .dot.off {
+      background: #6b7280;
+    }
+
+    .controls a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .controls a:hover {
+      background: rgba(255,255,255,0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="panel sidebar" id="sidebar">
+      <span class="panel-name">Settings Sidebar</span>
+      <span class="panel-label" id="sidebarLabel">240</span>
+    </div>
+    <div class="panel content" id="content">
+      <span class="panel-name">Content</span>
+      <div class="content-container" id="contentContainer"></div>
+      <div class="content-labels">
+        <span class="panel-label" id="contentLabel">960</span>
+        <span class="content-inner-label" id="contentInnerLabel">960</span>
+        <span class="content-inner-hint">content max-width</span>
+      </div>
+      <span class="grid-hint" id="gridHint">3 columns</span>
+      <div class="grid-vis" id="gridVis">
+        <div class="grid-col"></div>
+        <div class="grid-col"></div>
+        <div class="grid-col"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span class="total-width" id="totalWidth">1220px</span>
+    <div class="state"><div class="dot" id="dotSidebar"></div><span id="stateSidebar">Sidebar: 240</span></div>
+    <button class="btn" id="btnSidebar">Toggle Sidebar</button>
+    <a href="simple.html">← Chat Layout</a>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const contentEl = document.getElementById('content');
+    const contentContainer = document.getElementById('contentContainer');
+    const sidebarLabel = document.getElementById('sidebarLabel');
+    const contentLabel = document.getElementById('contentLabel');
+    const contentInnerLabel = document.getElementById('contentInnerLabel');
+    const gridVis = document.getElementById('gridVis');
+    const gridHint = document.getElementById('gridHint');
+    const totalWidth = document.getElementById('totalWidth');
+    const stateSidebar = document.getElementById('stateSidebar');
+    const dotSidebar = document.getElementById('dotSidebar');
+    const btnSidebar = document.getElementById('btnSidebar');
+
+    const SIDEBAR_WIDTH = 240;
+    const CONTENT_MAX = 960;
+    const CARD_MIN = 260;
+    const BREAKPOINT = 720;
+
+    let sidebarForced = null; // null=auto, true=open, false=closed
+
+    btnSidebar.addEventListener('click', () => {
+      if (sidebarForced === null) {
+        sidebarForced = false;
+      } else if (sidebarForced === false) {
+        sidebarForced = true;
+      } else {
+        sidebarForced = null;
+      }
+      btnSidebar.classList.toggle('active', sidebarForced !== null);
+      updateLayout();
+    });
+
+    function updateLayout() {
+      const width = window.innerWidth;
+      totalWidth.textContent = width + 'px';
+
+      let sidebarVisible = true;
+
+      if (sidebarForced === true) {
+        sidebarVisible = true;
+      } else if (sidebarForced === false) {
+        sidebarVisible = false;
+      } else {
+        sidebarVisible = width >= BREAKPOINT;
+      }
+
+      // Apply sidebar
+      sidebar.classList.toggle('hidden', !sidebarVisible);
+
+      // Compute content area
+      const contentWidth = sidebarVisible ? width - SIDEBAR_WIDTH : width;
+      const innerWidth = Math.min(contentWidth, CONTENT_MAX);
+
+      // Content container visualisation
+      const offset = (contentWidth - innerWidth) / 2;
+      contentContainer.style.left = offset + 'px';
+      contentContainer.style.right = offset + 'px';
+      contentContainer.style.display = contentWidth > CONTENT_MAX ? '' : 'none';
+
+      // Grid columns (auto-fill, minmax(260px, 1fr))
+      const cols = Math.max(1, Math.floor(innerWidth / CARD_MIN));
+
+      // Update grid vis
+      gridVis.innerHTML = '';
+      for (let i = 0; i < cols; i++) {
+        const col = document.createElement('div');
+        col.className = 'grid-col';
+        gridVis.appendChild(col);
+      }
+      gridHint.textContent = cols + (cols === 1 ? ' column' : ' columns');
+
+      // Update labels
+      sidebarLabel.textContent = sidebarVisible ? SIDEBAR_WIDTH : '—';
+      contentLabel.textContent = Math.round(contentWidth);
+      contentInnerLabel.textContent = Math.round(innerWidth);
+
+      // State
+      stateSidebar.textContent = sidebarVisible ? `Sidebar: ${SIDEBAR_WIDTH}` : 'Sidebar: Hidden';
+      dotSidebar.className = 'dot' + (sidebarVisible ? '' : ' off');
+    }
+
+    window.addEventListener('resize', updateLayout);
+    updateLayout();
+  </script>
+</body>
+</html>

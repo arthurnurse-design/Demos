@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Layout — Simplified</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --color-border: #e8e5e5;
+      --color-accent: #f5c518;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      background: #1a1a1a;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-label {
+      font-size: 72px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: rgba(0,0,0,0.12);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .panel-name {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(0,0,0,0.35);
+    }
+
+    /* Nav */
+    .nav {
+      background: #f5f3f3;
+      border-right: 1px solid var(--color-border);
+    }
+
+    .nav.hidden {
+      border-right: none;
+    }
+
+    /* Chat */
+    .chat {
+      flex: 1;
+      min-width: 0;
+      background: #ffffff;
+      flex-direction: column;
+    }
+
+    .chat-labels {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .chat-content-label {
+      font-size: 28px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: rgba(0,0,0,0.08);
+    }
+
+    .chat-content-hint {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Content container visualisation */
+    .content-container {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.02);
+      border-left: 1px dashed rgba(0,0,0,0.08);
+      border-right: 1px dashed rgba(0,0,0,0.08);
+      pointer-events: none;
+    }
+
+    /* Canvas */
+    .canvas {
+      background: #f0edec;
+      border-left: 1px solid var(--color-border);
+      width: 0;
+      min-width: 0;
+    }
+
+    .canvas.open {
+      min-width: 200px;
+    }
+
+    /* Resize handles */
+    .resize-handle {
+      width: 5px;
+      cursor: col-resize;
+      background: transparent;
+      position: relative;
+      z-index: 15;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.dragging {
+      background: var(--color-accent);
+    }
+
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: -3px;
+      right: -3px;
+    }
+
+    body.resizing {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.resizing * {
+      pointer-events: none;
+    }
+
+    body.resizing .resize-handle {
+      pointer-events: auto;
+    }
+
+    /* Controls bar */
+    .controls {
+      background: #1a1a1a;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px 20px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .controls .total-width {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8);
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .controls .btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .controls .btn.active {
+      background: var(--color-accent);
+      color: #000;
+      border-color: var(--color-accent);
+    }
+
+    .controls .state {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .controls .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+
+    .controls .dot.off {
+      background: #6b7280;
+    }
+
+    .controls a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .controls a:hover {
+      background: rgba(255,255,255,0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="panel nav" id="nav">
+      <span class="panel-name">Nav</span>
+      <span class="panel-label" id="navLabel">240</span>
+    </div>
+    <div class="resize-handle" id="resizeNav"></div>
+    <div class="panel chat" id="chat">
+      <span class="panel-name">Chat</span>
+      <div class="content-container" id="contentContainer"></div>
+      <div class="chat-labels">
+        <span class="panel-label" id="chatLabel">560</span>
+        <span class="chat-content-label" id="chatContentLabel">768</span>
+        <span class="chat-content-hint">content max-width</span>
+      </div>
+    </div>
+    <div class="resize-handle" id="resizeCanvas"></div>
+    <div class="panel canvas" id="canvas">
+      <span class="panel-name">Canvas</span>
+      <span class="panel-label" id="canvasLabel">—</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span class="total-width" id="totalWidth">1220px</span>
+    <div class="state"><div class="dot" id="dotNav"></div><span id="stateNav">Nav: 240</span></div>
+    <div class="state"><div class="dot" id="dotCanvas"></div><span id="stateCanvas">Canvas: Off</span></div>
+    <button class="btn" id="btnNav">Toggle Nav</button>
+    <button class="btn" id="btnCanvas">Open Canvas</button>
+    <a href="simple-settings.html">Settings →</a>
+  </div>
+
+  <script>
+    const navEl = document.getElementById('nav');
+    const chat = document.getElementById('chat');
+    const canvasEl = document.getElementById('canvas');
+    const resizeNav = document.getElementById('resizeNav');
+    const resizeCanvasHandle = document.getElementById('resizeCanvas');
+    const navLabel = document.getElementById('navLabel');
+    const chatLabel = document.getElementById('chatLabel');
+    const chatContentLabel = document.getElementById('chatContentLabel');
+    const contentContainer = document.getElementById('contentContainer');
+    const canvasLabel = document.getElementById('canvasLabel');
+    const totalWidth = document.getElementById('totalWidth');
+    const stateNav = document.getElementById('stateNav');
+    const stateCanvas = document.getElementById('stateCanvas');
+    const dotNav = document.getElementById('dotNav');
+    const dotCanvas = document.getElementById('dotCanvas');
+    const btnNav = document.getElementById('btnNav');
+    const btnCanvasEl = document.getElementById('btnCanvas');
+
+    const NAV_EXPANDED = 240;
+    const NAV_COLLAPSED = 0;
+    const NAV_MIN = 200;
+    const NAV_MAX = 400;
+    const CHAT_MIN = 560;
+    const CHAT_CONTENT_MAX = 768;
+    const CANVAS_DEFAULT = 520;
+    const CANVAS_MIN = 260;
+    const CANVAS_MAX = 800;
+
+    let canvasOpen = false;
+    let navForced = null; // null=auto, true=open, false=closed
+    let userNavWidth = null;
+    let userCanvasWidth = null;
+
+    btnCanvasEl.addEventListener('click', () => {
+      canvasOpen = !canvasOpen;
+      btnCanvasEl.classList.toggle('active', canvasOpen);
+      btnCanvasEl.textContent = canvasOpen ? 'Close Canvas' : 'Open Canvas';
+      updateLayout();
+    });
+
+    btnNav.addEventListener('click', () => {
+      if (navForced === null) {
+        navForced = false;
+      } else if (navForced === false) {
+        navForced = true;
+        userNavWidth = null;
+      } else {
+        navForced = null;
+      }
+      btnNav.classList.toggle('active', navForced !== null);
+      updateLayout();
+    });
+
+    // Drag logic
+    function initDrag(handle, onDrag) {
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        document.body.classList.add('resizing');
+        handle.classList.add('dragging');
+        const onMove = (e) => onDrag(e.clientX);
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          document.body.classList.remove('resizing');
+          handle.classList.remove('dragging');
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+
+    initDrag(resizeNav, (x) => {
+      userNavWidth = Math.max(NAV_MIN, Math.min(NAV_MAX, x));
+      navForced = true;
+      btnNav.classList.add('active');
+      updateLayout();
+    });
+
+    initDrag(resizeCanvasHandle, (x) => {
+      const w = window.innerWidth - x;
+      userCanvasWidth = Math.max(CANVAS_MIN, Math.min(CANVAS_MAX, w));
+      updateLayout();
+    });
+
+    function updateLayout() {
+      const width = window.innerWidth;
+      totalWidth.textContent = width + 'px';
+
+      let navWidth = NAV_EXPANDED;
+      let navHidden = false;
+      let showCanvas = false;
+      let canvasWidth = 0;
+
+      const desiredCanvas = userCanvasWidth || CANVAS_DEFAULT;
+
+      // Nav state
+      if (navForced === true) {
+        navWidth = userNavWidth || NAV_EXPANDED;
+      } else if (navForced === false) {
+        navHidden = true;
+        navWidth = NAV_COLLAPSED;
+      } else {
+        if (width < 740) {
+          navHidden = true;
+          navWidth = NAV_COLLAPSED;
+        }
+      }
+
+      // Canvas state
+      if (canvasOpen) {
+        const available = width - navWidth;
+        if (available >= CHAT_MIN + CANVAS_MIN) {
+          showCanvas = true;
+          canvasWidth = Math.min(available - CHAT_MIN, desiredCanvas);
+        } else if (navForced !== true) {
+          const availCollapsed = width - NAV_COLLAPSED;
+          if (availCollapsed >= CHAT_MIN + CANVAS_MIN) {
+            navHidden = true;
+            navWidth = NAV_COLLAPSED;
+            showCanvas = true;
+            canvasWidth = Math.min(availCollapsed - CHAT_MIN, desiredCanvas);
+          } else {
+            canvasOpen = false;
+            btnCanvasEl.classList.remove('active');
+            btnCanvasEl.textContent = 'Open Canvas';
+            navHidden = true;
+            navWidth = NAV_COLLAPSED;
+          }
+        } else {
+          canvasOpen = false;
+          btnCanvasEl.classList.remove('active');
+          btnCanvasEl.textContent = 'Open Canvas';
+        }
+      }
+
+      // Apply nav
+      navEl.style.width = navWidth + 'px';
+      navEl.style.minWidth = navWidth + 'px';
+      navEl.classList.toggle('hidden', navHidden);
+      resizeNav.style.display = navHidden ? 'none' : '';
+
+      // Apply canvas
+      if (showCanvas) {
+        canvasEl.classList.add('open');
+        canvasEl.style.width = canvasWidth + 'px';
+        canvasEl.style.minWidth = CANVAS_MIN + 'px';
+        resizeCanvasHandle.style.display = '';
+      } else {
+        canvasEl.classList.remove('open');
+        canvasEl.style.width = '0';
+        canvasEl.style.minWidth = '0';
+        resizeCanvasHandle.style.display = 'none';
+      }
+
+      // Compute chat width
+      const handles = (navHidden ? 0 : 5) + (showCanvas ? 5 : 0);
+      const chatWidth = width - navWidth - (showCanvas ? canvasWidth : 0) - handles;
+      const contentWidth = Math.min(chatWidth, CHAT_CONTENT_MAX);
+
+      // Update content container visualisation
+      const offset = (chatWidth - contentWidth) / 2;
+      contentContainer.style.left = offset + 'px';
+      contentContainer.style.right = offset + 'px';
+      contentContainer.style.display = chatWidth > CHAT_CONTENT_MAX ? '' : 'none';
+
+      // Update labels
+      navLabel.textContent = navHidden ? '—' : navWidth;
+      chatLabel.textContent = Math.round(chatWidth);
+      chatContentLabel.textContent = contentWidth;
+      canvasLabel.textContent = showCanvas ? Math.round(canvasWidth) : '—';
+
+      // Update state indicators
+      stateNav.textContent = navHidden ? 'Nav: Hidden' : `Nav: ${navWidth}`;
+      dotNav.className = 'dot' + (navHidden ? ' off' : '');
+      stateCanvas.textContent = showCanvas ? `Canvas: ${Math.round(canvasWidth)}` : 'Canvas: Off';
+      dotCanvas.className = 'dot' + (showCanvas ? '' : ' off');
+    }
+
+    window.addEventListener('resize', updateLayout);
+    updateLayout();
+  </script>
+</body>
+</html>

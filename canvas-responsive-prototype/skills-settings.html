@@ -22,30 +22,30 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-      background: var(--color-bg);
-      min-height: 100vh;
+      background: #1a1a1a;
+      height: 100vh;
       color: var(--color-text);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Info Panel */
+    /* Info Panel - fixed bar below prototype */
     .info-panel {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(26, 26, 26, 0.92);
-      backdrop-filter: blur(12px);
-      border-radius: 12px;
-      padding: 12px 20px;
+      background: #1a1a1a;
+      padding: 10px 16px;
       display: flex;
       align-items: center;
-      gap: 20px;
-      z-index: 1000;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      justify-content: center;
+      gap: 12px 16px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
       font-size: 12px;
       color: rgba(255,255,255,0.7);
-      white-space: nowrap;
+    }
+
+    .info-panel .separator {
+      display: none;
     }
 
     .info-panel .width-value {
@@ -55,11 +55,6 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .info-panel .separator {
-      width: 1px;
-      height: 20px;
-      background: rgba(255,255,255,0.15);
-    }
 
     .info-panel .state-item {
       display: flex;
@@ -94,9 +89,11 @@
     /* App Layout */
     .app-layout {
       display: flex;
-      height: 100vh;
+      flex: 1;
+      min-height: 0;
       position: relative;
       overflow: hidden;
+      background: var(--color-bg);
     }
 
     /* Main content area (replaces chat) */
@@ -208,6 +205,64 @@
       padding: 0;
       border-right: none;
       overflow: hidden;
+    }
+
+    /* Mobile menu button - visible when sidebar is hidden */
+    .mobile-menu-btn {
+      display: none;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 6px;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .mobile-menu-btn:hover {
+      background: var(--color-hover);
+    }
+
+    .mobile-menu-btn.visible {
+      display: flex;
+    }
+
+    /* Mobile settings overlay */
+    .settings-overlay-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 90;
+    }
+
+    .settings-overlay-backdrop.visible {
+      display: block;
+    }
+
+    .settings-overlay-nav {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 260px;
+      max-width: 80vw;
+      background: var(--color-nav-bg);
+      z-index: 100;
+      overflow-y: auto;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+      flex-direction: column;
+      padding-top: 16px;
+    }
+
+    .settings-overlay-nav.visible {
+      display: flex;
     }
 
     .settings-sidebar-header {
@@ -509,6 +564,133 @@
       color: var(--color-text-secondary);
     }
 
+    /* Simplified mode overlays */
+    .simple-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 4px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .simple-overlay .big-num {
+      font-size: 72px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: rgba(0,0,0,0.12);
+    }
+
+    .simple-overlay .sub-num {
+      font-size: 28px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: rgba(0,0,0,0.08);
+    }
+
+    .simple-overlay .sub-hint {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .simple-overlay .panel-tag {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(0,0,0,0.35);
+    }
+
+    .content-guide {
+      display: none;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.02);
+      border-left: 1px dashed rgba(0,0,0,0.08);
+      border-right: 1px dashed rgba(0,0,0,0.08);
+      pointer-events: none;
+    }
+
+    /* Simplify toggle in toolbar */
+    .simplify-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.8);
+      transition: all 0.15s;
+    }
+
+    .simplify-toggle:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .simplify-toggle .toggle-track {
+      width: 28px;
+      height: 16px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.25);
+      position: relative;
+      transition: background 0.15s;
+    }
+
+    .simplify-toggle .toggle-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .simplify-toggle.active .toggle-track {
+      background: var(--color-accent);
+    }
+
+    .simplify-toggle.active .toggle-thumb {
+      transform: translateX(12px);
+    }
+
+    .simplify-toggle.active {
+      color: #fff;
+      border-color: var(--color-accent);
+    }
+
+    body.simplified .simple-overlay {
+      display: flex;
+    }
+
+    body.simplified .content-guide {
+      display: block;
+    }
+
+    body.simplified .top-bar,
+    body.simplified .settings-sidebar-header,
+    body.simplified .settings-back,
+    body.simplified .settings-nav-item,
+    body.simplified .settings-section-title,
+    body.simplified .settings-content-inner {
+      visibility: hidden;
+    }
   </style>
 </head>
 <body>
@@ -517,6 +699,9 @@
     <div class="main-area">
       <!-- Top bar -->
       <div class="top-bar">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         <div class="top-bar-nav">
           <button>‹</button>
           <button>›</button>
@@ -537,12 +722,8 @@
       <div class="content-area">
         <!-- Settings sidebar -->
         <div class="settings-sidebar" id="settingsSidebar">
+          <div class="simple-overlay"><span class="panel-tag">Sidebar</span><span class="big-num" id="simpleSidebarLabel">240</span></div>
           <div class="settings-sidebar-header">
-            <div class="nav-dots">
-              <div class="nav-dot red"></div>
-              <div class="nav-dot yellow"></div>
-              <div class="nav-dot green"></div>
-            </div>
             <button class="sidebar-toggle-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
             </button>
@@ -606,7 +787,14 @@
         </div>
 
         <!-- Settings content -->
-        <div class="settings-content" id="settingsContent">
+        <div class="settings-content" id="settingsContent" style="position:relative;">
+          <div class="simple-overlay">
+            <span class="panel-tag">Content</span>
+            <span class="big-num" id="simpleContentLabel">960</span>
+            <span class="sub-num" id="simpleContentInner">960</span>
+            <span class="sub-hint">content max-width</span>
+          </div>
+          <div class="content-guide" id="contentGuide"></div>
           <div class="settings-content-inner">
             <div class="settings-breadcrumb">Settings <span>›</span> Skills</div>
 
@@ -635,6 +823,64 @@
     </div>
   </div>
 
+  <!-- Mobile settings overlay -->
+  <div class="settings-overlay-backdrop" id="settingsOverlayBackdrop"></div>
+  <div class="settings-overlay-nav" id="settingsOverlayNav">
+    <div class="settings-back" style="margin-bottom:8px;">
+      <span class="arrow">‹</span> Settings
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+      Profile
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68 1.65 1.65 0 0010 3.17V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+      Preferences
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
+      Notifications
+    </div>
+    <div class="settings-section-title">Customization</div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+      My Computer
+    </div>
+    <div class="settings-nav-item active">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+      Skills
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></span>
+      Workflows
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
+      Connectors
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+      Agent admin
+    </div>
+    <div class="settings-section-title">Account</div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68 1.65 1.65 0 0010 3.17V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+      General
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+      Users
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+      Plans & Billings
+    </div>
+    <div class="settings-nav-item">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      Sessions
+    </div>
+  </div>
+
   <!-- Info Panel -->
   <div class="info-panel" id="infoPanel">
     <span class="width-value" id="widthValue">1220px</span>
@@ -642,6 +888,10 @@
     <div class="state-item"><div class="dot" id="dotSettings"></div> <span id="stateSettings">Sidebar: 240px</span></div>
     <div class="separator"></div>
     <a href="index.html">← Canvas Prototype</a>
+    <button class="simplify-toggle" id="btnSimplify">
+      <span>Simplify</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </button>
   </div>
 
   <script>
@@ -649,6 +899,32 @@
     const widthValue = document.getElementById('widthValue');
     const stateSettings = document.getElementById('stateSettings');
     const dotSettings = document.getElementById('dotSettings');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const settingsOverlayBackdrop = document.getElementById('settingsOverlayBackdrop');
+    const settingsOverlayNav = document.getElementById('settingsOverlayNav');
+    const btnSimplify = document.getElementById('btnSimplify');
+    const simpleSidebarLabel = document.getElementById('simpleSidebarLabel');
+    const simpleContentLabel = document.getElementById('simpleContentLabel');
+    const simpleContentInner = document.getElementById('simpleContentInner');
+    const contentGuide = document.getElementById('contentGuide');
+
+    const CONTENT_MAX = 960;
+
+    btnSimplify.addEventListener('click', () => {
+      document.body.classList.toggle('simplified');
+      btnSimplify.classList.toggle('active', document.body.classList.contains('simplified'));
+      updateLayout();
+    });
+
+    mobileMenuBtn.addEventListener('click', () => {
+      settingsOverlayBackdrop.classList.add('visible');
+      settingsOverlayNav.classList.add('visible');
+    });
+
+    settingsOverlayBackdrop.addEventListener('click', () => {
+      settingsOverlayBackdrop.classList.remove('visible');
+      settingsOverlayNav.classList.remove('visible');
+    });
 
     // Populate skill cards
     const skills = [
@@ -700,9 +976,33 @@
       }
 
       settingsSidebar.classList.toggle('hidden', settingsHidden);
+      mobileMenuBtn.classList.toggle('visible', settingsHidden);
+
+      if (!settingsHidden) {
+        settingsOverlayBackdrop.classList.remove('visible');
+        settingsOverlayNav.classList.remove('visible');
+      }
 
       stateSettings.textContent = settingsHidden ? 'Sidebar: Hidden' : `Sidebar: ${SETTINGS_WIDTH}px`;
       dotSettings.className = 'dot' + (settingsHidden ? ' off' : '');
+
+      // Simplified overlay labels
+      const contentWidth = settingsHidden ? width : width - SETTINGS_WIDTH;
+      const innerWidth = Math.min(contentWidth, CONTENT_MAX);
+
+      simpleSidebarLabel.textContent = settingsHidden ? '—' : SETTINGS_WIDTH;
+      simpleContentLabel.textContent = Math.round(contentWidth);
+      simpleContentInner.textContent = Math.round(innerWidth);
+
+      // Content guide
+      if (contentWidth > CONTENT_MAX) {
+        const offset = (contentWidth - innerWidth) / 2;
+        contentGuide.style.left = offset + 'px';
+        contentGuide.style.right = offset + 'px';
+        contentGuide.style.display = '';
+      } else {
+        contentGuide.style.display = 'none';
+      }
     }
 
     window.addEventListener('resize', updateLayout);
