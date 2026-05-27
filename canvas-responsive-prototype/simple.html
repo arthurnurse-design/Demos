@@ -254,7 +254,7 @@
     <div class="resize-handle" id="resizeCanvas"></div>
     <div class="panel canvas" id="canvas">
       <span class="panel-name">Canvas</span>
-      <span class="panel-label" id="canvasLabel">—</span>
+      <span class="panel-label" id="canvasLabel"></span>
     </div>
   </div>
 
@@ -434,10 +434,20 @@
       contentContainer.style.display = chatWidth > CHAT_CONTENT_MAX ? '' : 'none';
 
       // Update labels
-      navLabel.textContent = navHidden ? '—' : navWidth;
+      navLabel.textContent = navHidden ? '' : navWidth;
       chatLabel.textContent = Math.round(chatWidth);
       chatContentLabel.textContent = contentWidth;
-      canvasLabel.textContent = showCanvas ? Math.round(canvasWidth) : '—';
+      canvasLabel.textContent = showCanvas ? Math.round(canvasWidth) : '';
+
+      // Scale font sizes to fit panel width
+      function scaleFontSize(el, panelWidth, maxFont) {
+        const size = Math.max(16, Math.min(maxFont, panelWidth * 0.3));
+        el.style.fontSize = size + 'px';
+      }
+      if (!navHidden) scaleFontSize(navLabel, navWidth, 72);
+      scaleFontSize(chatLabel, chatWidth, 72);
+      scaleFontSize(chatContentLabel, chatWidth, 28);
+      if (showCanvas) scaleFontSize(canvasLabel, canvasWidth, 72);
 
       // Update state indicators
       stateNav.textContent = navHidden ? 'Nav: Hidden' : `Nav: ${navWidth}`;

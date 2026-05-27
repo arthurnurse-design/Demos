@@ -328,9 +328,18 @@
       gridHint.textContent = cols + (cols === 1 ? ' column' : ' columns');
 
       // Update labels
-      sidebarLabel.textContent = sidebarVisible ? SIDEBAR_WIDTH : '—';
+      sidebarLabel.textContent = sidebarVisible ? SIDEBAR_WIDTH : '';
       contentLabel.textContent = Math.round(contentWidth);
       contentInnerLabel.textContent = Math.round(innerWidth);
+
+      // Scale font sizes to fit panel width
+      function scaleFontSize(el, panelWidth, maxFont) {
+        const size = Math.max(16, Math.min(maxFont, panelWidth * 0.3));
+        el.style.fontSize = size + 'px';
+      }
+      if (sidebarVisible) scaleFontSize(sidebarLabel, SIDEBAR_WIDTH, 72);
+      scaleFontSize(contentLabel, contentWidth, 72);
+      scaleFontSize(contentInnerLabel, contentWidth, 28);
 
       // State
       stateSidebar.textContent = sidebarVisible ? `Sidebar: ${SIDEBAR_WIDTH}` : 'Sidebar: Hidden';

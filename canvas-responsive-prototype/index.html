@@ -826,6 +826,8 @@
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       color: rgba(0,0,0,0.12);
+      white-space: nowrap;
+      transition: font-size 0.15s;
     }
 
     .simple-overlay .sub-num {
@@ -833,6 +835,8 @@
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       color: rgba(0,0,0,0.08);
+      white-space: nowrap;
+      transition: font-size 0.15s;
     }
 
     .simple-overlay .sub-hint {
@@ -867,6 +871,12 @@
 
     body.simplified .simple-overlay {
       display: flex;
+      z-index: 10;
+    }
+
+    body.simplified .nav-sidebar,
+    body.simplified .nav-sidebar.collapsed {
+      overflow: visible;
     }
 
     body.simplified .content-guide {
@@ -1075,7 +1085,7 @@
 
     <!-- Canvas Panel (inline split) -->
     <div class="canvas-panel" id="canvasPanel">
-      <div class="simple-overlay"><span class="panel-tag">Canvas</span><span class="big-num" id="simpleCanvasLabel">—</span></div>
+      <div class="simple-overlay"><span class="panel-tag">Canvas</span><span class="big-num" id="simpleCanvasLabel"></span></div>
       <div class="canvas-tabs">
         <div class="canvas-tab"><span class="canvas-tab-icon">📄</span> Canvas</div>
         <div class="canvas-tab active"><span class="canvas-tab-icon">🎨</span> Design direction</div>
@@ -1338,10 +1348,20 @@
       const chatWidth = width - navWidth - (showInline ? canvasWidth : 0) - handles;
       const contentWidth = Math.min(chatWidth, CHAT_CONTENT_MAX);
 
-      simpleNavLabel.textContent = navCollapsed ? '—' : navWidth;
+      simpleNavLabel.textContent = navWidth;
       simpleChatLabel.textContent = Math.round(chatWidth);
       simpleChatContent.textContent = contentWidth;
-      simpleCanvasLabel.textContent = showInline ? Math.round(canvasWidth) : '—';
+      simpleCanvasLabel.textContent = showInline ? Math.round(canvasWidth) : '';
+
+      // Scale font sizes to fit panel width
+      function scaleFontSize(el, panelWidth, maxFont) {
+        const size = Math.max(16, Math.min(maxFont, panelWidth * 0.3));
+        el.style.fontSize = size + 'px';
+      }
+      scaleFontSize(simpleNavLabel, navWidth, 72);
+      scaleFontSize(simpleChatLabel, chatWidth, 72);
+      scaleFontSize(simpleChatContent, chatWidth, 28);
+      if (showInline) scaleFontSize(simpleCanvasLabel, canvasWidth, 72);
 
       // Content guide (dashed box showing max-width)
       if (chatWidth > CHAT_CONTENT_MAX) {

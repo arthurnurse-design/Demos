@@ -677,6 +677,12 @@
 
     body.simplified .simple-overlay {
       display: flex;
+      z-index: 10;
+    }
+
+    body.simplified .settings-sidebar,
+    body.simplified .settings-sidebar.hidden {
+      overflow: visible;
     }
 
     body.simplified .content-guide {
@@ -990,9 +996,18 @@
       const contentWidth = settingsHidden ? width : width - SETTINGS_WIDTH;
       const innerWidth = Math.min(contentWidth, CONTENT_MAX);
 
-      simpleSidebarLabel.textContent = settingsHidden ? '—' : SETTINGS_WIDTH;
+      simpleSidebarLabel.textContent = settingsHidden ? '' : SETTINGS_WIDTH;
       simpleContentLabel.textContent = Math.round(contentWidth);
       simpleContentInner.textContent = Math.round(innerWidth);
+
+      // Scale font sizes to fit panel width
+      function scaleFontSize(el, panelWidth, maxFont) {
+        const size = Math.max(16, Math.min(maxFont, panelWidth * 0.3));
+        el.style.fontSize = size + 'px';
+      }
+      if (!settingsHidden) scaleFontSize(simpleSidebarLabel, SETTINGS_WIDTH, 72);
+      scaleFontSize(simpleContentLabel, contentWidth, 72);
+      scaleFontSize(simpleContentInner, contentWidth, 28);
 
       // Content guide
       if (contentWidth > CONTENT_MAX) {
